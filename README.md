@@ -1,5 +1,6 @@
 # Cranfield-MARIO-robot-model
 MARIO description model and package for ROS 2
+© Cranfield University 2023 – The copyright and IP in this repository are vested in Cranfield University, released under GPL-3 license
 
 
 
