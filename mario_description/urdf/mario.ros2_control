@@ -1,0 +1,235 @@
+<?xml version="1.0"?>
+<!-- Macros that add ros2 control -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!--            -->
+    <!-- Properties -->
+    <!--            -->
+
+    <!--                         -->
+    <!-- Main ROS2 Control Macro -->
+    <!--                         -->
+    <xacro:macro name="ros2_control_macro" params="
+        prefix:=''
+        name:=system
+        plugin:=gz
+        command_interface:=position
+        robot_ip:=''
+        package_name:=mario_description
+    ">
+
+    <!-- Properties -->
+    <xacro:property name="initial_positions_file" value="$(find ${package_name})/config/initial_joint_positions.yaml"/>
+    
+    <xacro:unless value="${command_interface == 'velocity'}">
+        <xacro:property name="hardware_velocity_control" value="False"/>
+    </xacro:unless>
+
+    <xacro:if value="${command_interface == 'velocity'}">
+        <xacro:property name="hardware_velocity_control" value="True"/>
+    </xacro:if>
+
+        <ros2_control name="${name}" type="system">
+            <!-- Hardware Interface -->
+            <xacro:ros2_control_hardware 
+                prefix="${prefix}" 
+                plugin="${plugin}" 
+                robot_ip="${robot_ip}"
+                hardware_velocity_control="${hardware_velocity_control}"
+            />
+
+            <!-- Arms -->
+            <xacro:ros2_control_joints prefix="${prefix}" command_interface="${command_interface}"/>
+        </ros2_control>
+    </xacro:macro>
+
+    <!--                -->
+    <!-- Hardware Macro -->
+    <!--                -->
+    <!-- TODO: incorporate command interface swap if needed (effort and velocity) -->
+    <xacro:macro name="ros2_control_hardware" params="
+        prefix:=''
+        plugin:=gz
+        hardware_velocity_control:='False'
+        hw_ns:='ufactory' add_gripper:='False'
+        robot_ip:=''
+        report_type:='normal' 
+        baud_checkset:='True' 
+        default_gripper_baud:=2000000
+    ">
+
+        <!-- Hardware -->
+        <hardware>    
+            <xacro:if value="${plugin == 'fake'}">
+                <plugin>fake_components/GenericSystem</plugin>
+            </xacro:if>
+            
+            <xacro:if value="${plugin == 'gz'}">
+                <!-- <plugin>gz_ros2_control/GazeboSimSystem</plugin> -->
+                <plugin>ign_ros2_control/IgnitionSystem</plugin>
+            </xacro:if>
+
+            <xacro:if value="${plugin == 'uf850_fake'}">
+                <plugin>uf_robot_hardware/UFRobotFakeSystemHardware</plugin>
+            </xacro:if>
+            
+            <xacro:if value="${plugin == 'real'}">
+                <plugin>uf_robot_hardware/UFRobotSystemHardware</plugin>
+                    <param name="hw_ns">${prefix}${hw_ns}</param>
+                    <param name="velocity_control">${hardware_velocity_control}</param>
+                    <param name="prefix">P${prefix}</param>
+                    <param name="robot_ip">R${robot_ip}</param>
+                    <param name="report_type">${report_type}</param>
+                    <param name="dof">6</param>
+                    <param name="baud_checkset">${baud_checkset}</param>
+                    <param name="default_gripper_baud">${default_gripper_baud}</param>
+                    <param name="robot_type">uf850</param>
+                    <param name="add_gripper">${add_gripper}</param>
+            </xacro:if>
+        </hardware>
+
+    </xacro:macro>
+
+    <!--                     -->
+    <!-- Joint Control Macro -->
+    <!--                     -->
+    <xacro:macro name="ros2_control_joints" params="
+        prefix:=unset
+        command_interface:=position
+    ">
+
+        <xacro:if value="${prefix == 'unset'}">
+                <xacro:ERROR_arm_prefix_undefined/>
+        </xacro:if>
+        <xacro:if value="${prefix == 'arm1_'}">
+            <xacro:property name="initial_positions" value="${xacro.load_yaml(initial_positions_file)['arm1_initial_positions']}"/>
+        </xacro:if>
+        <xacro:if value="${prefix == 'arm2_'}">
+            <xacro:property name="initial_positions" value="${xacro.load_yaml(initial_positions_file)['arm2_initial_positions']}"/>
+        </xacro:if>
+        <xacro:if value="${prefix == 'arm3_'}">
+            <xacro:property name="initial_positions" value="${xacro.load_yaml(initial_positions_file)['arm3_initial_positions']}"/>
+        </xacro:if>
+
+        <!-- Joint 1 -->
+        <joint name="${prefix}joint1">
+            <command_interface name="position">
+                <param name="min">-6.283185307179586</param>
+                <param name="max">6.283185307179586</param>
+            </command_interface>
+            <command_interface name="velocity">
+                <param name="min">-0.314</param>
+                <param name="max">0.314</param>
+            </command_interface>
+            <state_interface name="position">
+                <param name="initial_value">${initial_positions['joint1']}</param>
+            </state_interface>
+            <state_interface name="velocity">
+                <param name="initial_value">0.0</param>
+            </state_interface>
+        </joint>
+
+        <!-- Joint 2 -->
+        <joint name="${prefix}joint2">
+            <!-- <xacro:if value="${'position' in command_interface}">
+                <command_interface name="position"/>
+            </xacro:if>
+            <xacro:if value="${'velocity' in command_interface}">
+                <command_interface name="velocity"/>
+            </xacro:if>
+            <state_interface name="position">
+                <param name="initial_value">${initial_positions['joint2']}</param>
+            </state_interface>
+            <state_interface name="velocity">
+                <param name="initial_value">0.0</param>
+            </state_interface> -->
+            <command_interface name="position">
+                <param name="min">-2.3038346</param>
+                <param name="max">2.3038346</param>
+            </command_interface>
+            <command_interface name="velocity">
+                <param name="min">-0.314</param>
+                <param name="max">0.314</param>
+            </command_interface>
+            <state_interface name="position">
+                <param name="initial_value">${initial_positions['joint2']}</param>
+            </state_interface>
+            <state_interface name="velocity">
+                <param name="initial_value">0.0</param>                
+            </state_interface>
+        </joint>
+
+        <!-- Joint 3 -->
+        <joint name="${prefix}joint3">
+            <command_interface name="position">
+                <param name="min">-4.2236968</param>
+                <param name="max">0.061087</param>
+            </command_interface>
+            <command_interface name="velocity">
+                <param name="min">-0.314</param>
+                <param name="max">0.314</param>
+            </command_interface>
+            <state_interface name="position">
+                <param name="initial_value">${initial_positions['joint2']}</param>
+            </state_interface>
+            <state_interface name="velocity">
+                <param name="initial_value">0.0</param>                
+            </state_interface>
+        </joint>
+
+        <!-- Joint 4 -->
+        <joint name="${prefix}joint4">
+            <command_interface name="position">
+                <param name="min">-6.283185307179586</param>
+                <param name="max">6.283185307179586</param>
+            </command_interface>
+            <command_interface name="velocity">
+                <param name="min">-0.314</param>
+                <param name="max">0.314</param>
+            </command_interface>
+            <state_interface name="position">
+                <param name="initial_value">${initial_positions['joint2']}</param>
+            </state_interface>
+            <state_interface name="velocity">
+                <param name="initial_value">0.0</param>                
+            </state_interface>
+        </joint>
+
+        <!-- Joint 5 -->
+        <joint name="${prefix}joint5">
+            <command_interface name="position">
+                <param name="min">-2.1642</param>
+                <param name="max">2.1642</param>
+            </command_interface>
+            <command_interface name="velocity">
+                <param name="min">-0.314</param>
+                <param name="max">0.314</param>
+            </command_interface>
+            <state_interface name="position">
+                <param name="initial_value">${initial_positions['joint2']}</param>
+            </state_interface>
+            <state_interface name="velocity">
+                <param name="initial_value">0.0</param>                
+            </state_interface>
+        </joint>
+
+        <!-- Joint 6 -->
+        <joint name="${prefix}joint6">
+            <command_interface name="position">
+                <param name="min">-6.283185307179586</param>
+                <param name="max">6.283185307179586</param>
+            </command_interface>
+            <command_interface name="velocity">
+                <param name="min">-0.314</param>
+                <param name="max">0.314</param>
+            </command_interface>
+            <state_interface name="position">
+                <param name="initial_value">${initial_positions['joint2']}</param>
+            </state_interface>
+            <state_interface name="velocity">
+                <param name="initial_value">0.0</param>                
+            </state_interface>
+        </joint>
+    </xacro:macro>
+
+</robot>

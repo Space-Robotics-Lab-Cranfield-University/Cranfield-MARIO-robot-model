@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<!-- Xacro for MARIO -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--                  -->
+  <!-- Mario Body Macro -->
+  <!--                  -->
+  <xacro:property name="default_origin_xyz" value="0 0 0.9746"/>
+  <xacro:property name="default_origin_rpy" value="0 0 0"/>
+  <xacro:macro name="mario_body" params="
+    parent
+    origin_xyz:=${default_origin_xyz}
+    origin_rpy:=${default_origin_rpy}
+    collision:=true
+    mu:=0.001
+    gazebo_self_collide:=false
+    gazebo_preserve_fixed_joint:=false
+  ">
+
+  <!--                  -->
+  <!-- Body Parameters  -->
+  <!--                  -->
+  <xacro:property name="link_name" value="body_link"/>
+  <xacro:property name="joint_name" value="body_joint"/>
+  <xacro:property name="joint_type" value="fixed"/>  
+  <xacro:property name="mesh" value="torso_mounted_tools"/>
+  <xacro:property name="mesh_offset_rpy" value="0 0 0"/>
+
+    <!-- Body Link -->
+    <link name="${link_name}">
+        <visual>
+          <origin xyz="0 0 0" rpy="${mesh_offset_rpy}"/>
+          <geometry>
+            <mesh filename="file://$(find mario_description)/meshes/visual/${mesh}.dae"/>
+          </geometry>
+        </visual>
+
+        <xacro:if value="${collision}">
+          <collision>
+            <origin xyz="0 0 0" rpy="${mesh_offset_rpy}"/>
+            <geometry>
+              <mesh filename="file://$(find mario_description)/meshes/collision/${mesh}_collision.stl"/>
+            </geometry>
+          </collision>
+        </xacro:if>
+
+      <inertial>
+        <origin
+          xyz="-0.173 0.00 0.004"
+          rpy="${mesh_offset_rpy}" />
+        <mass value="46.273"/>
+        <inertia ixx="1.263" ixy="1e-6" ixz="1e-6" iyy="2.184" iyz="1e-6" izz="2.174"/>
+      </inertial>
+    </link>
+
+    <!-- Body Joint -->
+    <joint name="${joint_name}" type="${joint_type}">
+        <parent link="${parent}"/>
+        <child link="${link_name}"/>
+        <origin xyz="${origin_xyz}" rpy="${origin_rpy}"/>
+    </joint>
+
+    <!-- Gazebo settings -->
+    <xacro:if value="${joint_type == 'fixed' and gazebo_preserve_fixed_joint}">
+      <gazebo reference="${joint_name}">
+        <preserveFixedJoint>true</preserveFixedJoint>
+        <disableFixedJointLumping>true</disableFixedJointLumping>
+      </gazebo>
+    </xacro:if>
+
+    <gazebo reference="${link_name}">
+      <mu1 value="${mu}"/>
+      <mu2 value="${mu}"/>
+      <xacro:if value="${gazebo_self_collide}">
+        <self_collide>true</self_collide>
+      </xacro:if>
+    </gazebo>
+
+  </xacro:macro>
+</robot>

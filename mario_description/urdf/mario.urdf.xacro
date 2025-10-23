@@ -1,0 +1,203 @@
+<?xml version="1.0"?>
+<!-- URDF for MARIO-->
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="mario">
+
+  <!--                   -->
+  <!-- Imported elements -->
+  <!--                   -->
+  <xacro:include filename="$(find mario_description)/urdf/inertial_macros.xacro"/>
+  <xacro:include filename="$(find mario_description)/urdf/mario_parts.xacro"/>
+  <xacro:include filename="$(find mario_description)/urdf/mario_mount.xacro"/>
+  <xacro:include filename="$(find mario_description)/urdf/mario_body.xacro"/>
+  <xacro:include filename="$(find mario_description)/urdf/mario_arms.xacro"/>
+  <xacro:include filename="$(find mario_description)/urdf/mario.ros2_control"/>
+  <xacro:include filename="$(find mario_description)/urdf/mario.gazebo"/>
+  <xacro:include filename="$(find mario_description)/urdf/air_cushion.xacro"/>
+
+  <!--            -->
+  <!-- Parameters -->
+  <!--            -->
+  <!-- Flag to enable collision geometry for manipulator's arm -->
+  <xacro:arg name="collision_arm" default="true"/>
+
+  <!-- Flag to enable/disable frictionless air-cushion link ('base_link' or 'air_cushion_link') -->
+  <xacro:arg name="mount_parent" default="base_link"/>
+
+  <!-- Flag to enable ros2 controllers for manipulator -->
+  <xacro:arg name="ros2_control" default="true"/>
+
+  <!-- The ros2_control plugin that should be loaded for the manipulator ('fake', 'gz', 'real' or custom) -->
+  <xacro:arg name="ros2_control_plugin" default="fake"/>
+
+  <!-- The ros2_control command interface ('position' or 'velocity') -->
+  <xacro:arg name="command_interface" default="position"/>
+
+  <!-- The filepath to parameters of ROS 2 controllers -->
+  <xacro:arg name="ros2_controller_parameters" default="$(find mario_moveit_config)/config/controllers.yaml"/>
+
+  <!-- Package name (used for locating package specific files like initial position of joints) -->
+  <xacro:arg name="package_name" default="mario_description"/>
+
+  <!-- Flag to preserve fixed joints and prevent lumping when generating SDF for Gazebo -->
+  <xacro:arg name="gazebo_preserve_fixed_joint" default="false"/>
+
+  <!-- Flag to enable predefined detachable joints between End Effectors and docking points. Used during docking -->
+  <xacro:arg name="enable_detachable_joints" default="false"/>
+
+
+  <!--            -->
+  <!-- Properties -->
+  <!--            -->
+  <!-- Prefixes -->
+  <xacro:property name="prefix_arm" value="$(arg prefix)"/>
+
+  <!-- Mount origin in the world -->
+  <xacro:property name="world_name" value="world"/>
+  <xacro:property name="origin_xyz" value="0 0 0"/>
+  <xacro:property name="origin_rpy" value="0 0 0"/>
+
+  <!-- Body origin relative to mount -->
+  <xacro:property name="body_origin_xyz" value="0 0 0.9746"/>
+  <xacro:property name="body_origin_rpy" value="0 0 0"/>
+
+  <!-- Arm 1 origin relative to body -->
+  <xacro:property name="arm1_origin_xyz" value="0.03157042 0.0 0.2555044"/>
+  <xacro:property name="arm1_origin_rpy" value="0 0.785398 0"/>
+
+  <!-- Arm 2 origin relative to body -->
+  <xacro:property name="arm2_origin_xyz" value="0.03157042 -0.221273 -0.127752"/>
+  <xacro:property name="arm2_origin_rpy" value="1.958393 -0.3613671 0.7137244"/>
+
+  <!-- Arm 3 origin relative to body -->
+  <xacro:property name="arm3_origin_xyz" value="0.03157042 0.221273 -0.127752"/>
+  <xacro:property name="arm3_origin_rpy" value="-1.958393 -0.3613671 -0.7137244"/>
+
+  <!-- Air cushion -->
+  <xacro:property name="mount_parent" value="$(arg mount_parent)"/>
+  <xacro:unless value="${mount_parent == 'air_cushion_link' or mount_parent == 'base_link'}">
+      <xacro:ERROR_invalid_mount_parent/>
+  </xacro:unless>
+
+  <!-- Joint hardware interface -->
+  <xacro:property name="command_interface" value="$(arg command_interface)"/>
+  <xacro:if value="${command_interface == 'position'}">
+    <xacro:property name="hw_interface" value="PositionJointInterface"/>
+  </xacro:if>
+  <xacro:if value="${command_interface == 'velocity'}">
+    <xacro:property name="hw_interface" value="VelocityJointInterface"/>
+  </xacro:if>
+
+  <!-- Dummy link that the robot is fixed to -->
+  <link name="base_link"/>
+
+  <!-- Air cushion -->
+  <xacro:if value="${mount_parent == 'air_cushion_link'}">
+    <xacro:air_cushion
+      parent="base_link"
+      origin_xyz="${origin_xyz}"
+      origin_rpy="${origin_rpy}"
+      collision="$(arg collision_arm)"
+      joint_type="fixed"
+      gazebo_preserve_fixed_joint="$(arg gazebo_preserve_fixed_joint)"
+    />
+  </xacro:if> 
+
+  <!-- Mount -->
+  <xacro:mario_mount
+    parent="${mount_parent}"
+    origin_xyz="${origin_xyz}"
+    origin_rpy="${origin_rpy}"
+    collision="$(arg collision_arm)"
+    gazebo_preserve_fixed_joint="$(arg gazebo_preserve_fixed_joint)"
+  />
+
+  <xacro:mario_body
+    parent="mount_link"
+    origin_xyz="${body_origin_xyz}"
+    origin_rpy="${body_origin_rpy}"
+    collision="$(arg collision_arm)"
+    gazebo_preserve_fixed_joint="$(arg gazebo_preserve_fixed_joint)"
+  />
+
+  <!-- Arm 1 -->
+  <xacro:mario_arm
+    base_parent="body_link"
+    prefix="arm1_"
+    origin_xyz="${arm1_origin_xyz}"
+    origin_rpy="${arm1_origin_rpy}"
+    collision="$(arg collision_arm)"
+    hw_interface="${hw_interface}"
+    gazebo_preserve_fixed_joint="$(arg gazebo_preserve_fixed_joint)"
+  />
+
+  <!-- Arm 2 -->
+  <xacro:mario_arm
+    base_parent="body_link"
+    prefix="arm2_"
+    origin_xyz="${arm2_origin_xyz}"
+    origin_rpy="${arm2_origin_rpy}"
+    collision="$(arg collision_arm)"
+    hw_interface="${hw_interface}"
+    gazebo_preserve_fixed_joint="$(arg gazebo_preserve_fixed_joint)"
+  />
+
+  <!-- Arm 3 -->
+  <xacro:mario_arm
+    base_parent="body_link"
+    prefix="arm3_"
+    origin_xyz="${arm3_origin_xyz}"
+    origin_rpy="${arm3_origin_rpy}"
+    collision="$(arg collision_arm)"
+    hw_interface="${hw_interface}"
+    gazebo_preserve_fixed_joint="$(arg gazebo_preserve_fixed_joint)"
+  />
+
+  <xacro:if value="$(arg ros2_control)">
+    <!-- ROS 2 control -->
+    <xacro:ros2_control_macro
+      prefix="arm1_"
+      name="arm1_system"
+      plugin="$(arg ros2_control_plugin)" 
+      command_interface="$(arg command_interface)"
+      robot_ip="192.168.1.110"
+      package_name="$(arg package_name)"
+    />
+    <xacro:ros2_control_macro
+      prefix="arm2_"
+      name="arm2_system"
+      plugin="$(arg ros2_control_plugin)" 
+      command_interface="$(arg command_interface)"
+      robot_ip="192.168.1.108"
+      package_name="$(arg package_name)"
+    />
+    <xacro:ros2_control_macro
+      prefix="arm3_"
+      name="arm3_system"
+      plugin="$(arg ros2_control_plugin)" 
+      command_interface="$(arg command_interface)"
+      robot_ip="192.168.1.118"
+      package_name="$(arg package_name)"
+    />
+    <!-- Gazebo - ROS2 Control -->
+    <xacro:if value="${'gz' in '$(arg ros2_control_plugin)'}">
+      <xacro:gz_ros2_control controller_parameters="$(arg ros2_controller_parameters)"/>
+    </xacro:if>
+  </xacro:if>
+
+  <xacro:if value="$(arg enable_detachable_joints)">
+
+    <xacro:docking_point
+      parent_link="arm2_link6"
+      child_model="docking_point1"
+      child_link="docking_point_link"
+    />
+
+    <xacro:docking_point
+      parent_link="arm3_link6"
+      child_model="docking_point2"
+      child_link="docking_point_link"
+    />
+
+  </xacro:if>
+
+</robot>

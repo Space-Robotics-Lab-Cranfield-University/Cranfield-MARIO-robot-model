@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<!-- Xacro for air cushion to simulate air bearings -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Simple cylinder beneath main platform that simulates near frictionless 
+  air bearings -->
+  <xacro:macro name="air_cushion" params="
+    parent
+    origin_xyz:=${default_origin_xyz}
+    origin_rpy:=${default_origin_rpy}
+    collision:=true
+    joint_type:=fixed
+    mu:=0.001
+    gazebo_self_collide:=false
+    gazebo_preserve_fixed_joint:=false
+  ">
+
+  <!--            -->
+  <!-- Parameters -->
+  <!--            -->
+  <xacro:property name="link_name" value="air_cushion_link"/>
+  <xacro:property name="joint_name" value="air_cushion_joint"/>
+  <xacro:property name="mesh_offset_rpy" value="0 0 0"/>
+  <xacro:property name="default_origin_xyz" value="0 0 0"/>
+  <xacro:property name="default_origin_rpy" value="0 0 0"/>
+  <xacro:property name="radius" value="0.425"/>
+  <xacro:property name="length" value="0.005"/>
+
+    <!-- Link -->
+    <link name="${link_name}">
+        <visual>
+          <origin xyz="0 0 0" rpy="${mesh_offset_rpy}"/>
+          <geometry>
+            <cylinder radius="${radius}" length="${length}"/>
+          </geometry>
+        </visual>
+
+        <xacro:inertial_cylinder mass="1e-6" length="${length}" radius="${radius}">
+            <origin xyz="0 0 0.005" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+
+        <xacro:if value="${collision}">
+          <collision>
+            <origin xyz="0 0 0" rpy="${mesh_offset_rpy}"/>
+            <geometry>
+              <cylinder radius="${radius}" length="${length}"/>
+            </geometry>
+          </collision>
+        </xacro:if>
+
+    </link>
+
+    <!-- Joint -->
+    <joint name="${joint_name}" type="${joint_type}">
+        <parent link="${parent}"/>
+        <child link="${link_name}"/>
+        <origin xyz="${origin_xyz}" rpy="${origin_rpy}"/>
+    </joint>
+
+    <!-- Gazebo settings -->
+    <xacro:if value="${joint_type == 'fixed' and gazebo_preserve_fixed_joint}">
+      <gazebo reference="${joint_name}">
+        <preserveFixedJoint>true</preserveFixedJoint>
+        <disableFixedJointLumping>true</disableFixedJointLumping>
+      </gazebo>
+    </xacro:if>
+
+    <gazebo reference="${link_name}">
+      <mu1 value="${mu}"/>
+      <mu2 value="${mu}"/>
+      <xacro:if value="${gazebo_self_collide}">
+        <self_collide>true</self_collide>
+      </xacro:if>
+    </gazebo>
+
+  </xacro:macro>
+</robot>

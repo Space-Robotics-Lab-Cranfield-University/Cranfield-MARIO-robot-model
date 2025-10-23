@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!-- Macros that add Gazebo plugins -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--       -->
+  <!-- Macro -->
+  <!--       -->
+  <xacro:macro name="gz_ros2_control" params="controller_parameters">
+    <gazebo>
+      <!-- <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin"> -->
+      <plugin filename="ign_ros2_control-system" name="ign_ros2_control::IgnitionROS2ControlPlugin">
+        <robot_param>robot_description</robot_param>
+        <robot_param_node>robot_state_publisher</robot_param_node>
+        <parameters>${controller_parameters}</parameters>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="docking_point" params="
+  parent_link
+  child_model
+  child_link
+  ">
+    <gazebo>
+      <plugin filename="/home/dev_ws/src/MARIO-Assembler/simulation_environment/gazebo_plugins/detachable_joint_plugin/build/libDetachableJoint.so"
+              name="ignition::gazebo::systems::DetachableJoint">
+       <parent_link>${parent_link}</parent_link>
+       <child_model>${child_model}</child_model>
+       <child_link>${child_link}</child_link>
+       <detach_topic>/${child_model}/detach</detach_topic>
+       <attach_topic>/${child_model}/attach</attach_topic>
+       <output_topic>/${child_model}/state</output_topic>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+
+</robot>
